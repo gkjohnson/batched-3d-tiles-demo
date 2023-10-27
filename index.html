@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - trackball controls</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+
+			body {
+				background-color: #ccc;
+				color: #000;
+			}
+
+			a {
+				color: #f00;
+			}
+            
+            #info {
+                background: rgba( 0, 0, 0, 0.3 );
+                color: white;
+                position: absolute;
+                left: 0;
+                padding: 5px;
+                font-family: monospace;
+                white-space: pre;
+            }
+		</style>
+	</head>
+
+	<body>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://unpkg.com/three@0.157.0/build/three.module.min.js",
+					"three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/",
+					"three/": "https://unpkg.com/three@0.157.0/",
+					"3d-tiles-renderer": "https://unpkg.com/3d-tiles-renderer@0.3.21/src/index.js"
+				}
+			}
+		</script>
+        <script src="index.js" type="module"></script>
+        <div id="info">TEST</div>
+	</body>
+</html>
