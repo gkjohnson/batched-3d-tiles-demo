@@ -22,6 +22,8 @@ import { BatchedTileManager } from './BatchedTileManager.js';
 let camera, scene, renderer, tiles, controls, batchObject;
 let offsetParent;
 let infoEl;
+let averageTime = 0;
+let timeSamples = 0;
 
 const MAX_TILES = 800;
 const params = {
@@ -84,11 +86,7 @@ function init() {
 
     // }, 1000 );
 
-    console.log( cube.matrix );
-    window.MESH = batchObject;
-
 	tiles = new TilesRenderer( 'https://raw.githubusercontent.com/NASA-AMMOS/3DTilesSampleData/master/msl-dingo-gap/0528_0260184_to_s64o256_colorize/0528_0260184_to_s64o256_colorize/0528_0260184_to_s64o256_colorize_tileset.json' );
-    tiles.maxDepth = 2;
     tiles.onLoadModel = scene => {
 
         const [ mesh ] = scene.children;
@@ -152,6 +150,8 @@ function init() {
 
         }
 
+        timeSamples = 0;
+
     } );
 	gui.open();
 
@@ -172,13 +172,21 @@ function animate() {
     
 	tiles.update();
 
-	// render primary view
+    const start = window.performance.now();
 	renderer.render( scene, camera );
+    const delta = window.performance.now() - start;
+    averageTime += ( delta - averageTime ) / ( timeSamples + 1 );
+    if ( timeSamples < 60 ) {
+        
+        timeSamples ++;
+
+    }
 
     const { calls, triangles } = renderer.info.render;
     infoEl.innerText =
         `draw calls : ${ calls }\n` +
-        `triangles  : ${ triangles.toLocaleString() }`;
+        `triangles  : ${ triangles.toLocaleString() }\n` +
+        `draw time  : ${ averageTime.toFixed( 2 ) }ms`;
     window.info = renderer.info;
 
 }
