@@ -40,6 +40,7 @@ export class RenderTarget2DArray extends WebGLArrayRenderTarget {
         texture = texture || whiteTex;
 
         // save previous renderer state
+        const renderer = this._renderer;
 		const prevRenderTarget = renderer.getRenderTarget();
 		const prevToneMapping = renderer.toneMapping;
 		const prevAlpha = renderer.getClearAlpha();

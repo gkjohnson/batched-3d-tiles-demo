@@ -1,14 +1,20 @@
 import { BatchedMesh } from './BatchedMesh.js';
-import { BufferAttribute, WebGLArrayRenderTarget } from 'three';
+import { BufferAttribute, MeshBasicMaterial, MeshNormalMaterial } from 'three';
+import { RenderTarget2DArray } from './RenderTarget2DArray.js';
 
 function addIdAttribute( g, id ) {
 
-    const count = g.attributes.position.count;
-    const arr = new Uint16Array( count );
-    arr.fill( id );
+    let attr = g.getAttribute( 'texture_id' );
+    if ( ! attr ) {
 
-    const attr = new BufferAttribute( arr, 1, false );
-    g.setAttribute( 'texture_id', attr );
+        const count = g.attributes.position.count;
+        const arr = new Uint16Array( count );
+        attr = new BufferAttribute( arr, 1, false );
+        g.setAttribute( 'texture_id', attr );
+
+    }
+
+    attr.array.fill( id );
 
 }
 
@@ -16,8 +22,8 @@ export class BatchedTileManager {
 
     constructor( renderer, maxGeometry, maxVertex, maxIndex ) {
 
-        this.mesh = new BatchedMesh( maxGeometry, maxVertex, maxIndex );
-        this.textureArray = new WebGLArrayRenderTarget( 256, 256, maxGeometry );
+        this.mesh = new BatchedMesh( maxGeometry, maxGeometry * maxVertex, maxGeometry * maxIndex, new MeshNormalMaterial() );
+        this.textureArray = new RenderTarget2DArray( renderer, 256, 256, maxGeometry );
 
         this._maxVertex = maxVertex;
         this._maxIndex = maxIndex;
@@ -42,13 +48,11 @@ export class BatchedTileManager {
         const textureArray = this.textureArray;
 
         let batchId;
-        if ( freeIds.length === 0 ) {
+        if ( freeIds.length > 0 ) {
 
             const id = freeIds.pop();
             addIdAttribute( geometry, id );
             batchedMesh.setGeometryAt( id, geometry );
-            batchedMesh.setMatrixAt( id, mesh.matrix );
-
             batchId = id;
 
         } else {
@@ -59,13 +63,13 @@ export class BatchedTileManager {
 
         }
 
+        batchedMesh.setMatrixAt( batchId, mesh.matrix );
         meshToId.set( mesh, batchId );
         idToMesh.set( batchId, mesh );
 
         textureArray.setTextureAt( batchId, mesh.material.map );
-
-        // TODO: render texture
-
+        batchedMesh.setVisibleAt( batchId, true );
+        
     }
 
     removeMesh( mesh ) {
@@ -73,12 +77,15 @@ export class BatchedTileManager {
         const meshToId = this._meshToId;
         const idToMesh = this._idToMesh;
         const freeIds = this._freeIds;
+        const batchedMesh = this.mesh;
         if ( meshToId.has( mesh ) ) {
 
-            const id = meshToId( mesh );
+            const id = meshToId.get( mesh );
             meshToId.delete( mesh );
             idToMesh.delete( id );
             freeIds.push( id );
+            batchedMesh.setVisibleAt( id, false );
+
 
         }
 
@@ -92,6 +99,7 @@ export class BatchedTileManager {
 
             const id = meshToId.get( mesh );
             batchedMesh.setVisibleAt( id, visible );
+            console.log( id, visible );
 
         }
 
