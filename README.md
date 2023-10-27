@@ -7,3 +7,4 @@ Demonstration of rendering 3d tiles using three.js BatchedMesh addon
 - Ensure visiblity can be toggled correctly
 - Add per-mesh upload
 - Ensure the per-mesh data is assigned correctly on replacement
+- Make sure there's no overlap in ranges
