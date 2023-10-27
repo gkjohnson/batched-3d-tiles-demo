@@ -14,6 +14,7 @@ import {
 	Sphere,
     BoxGeometry,
     SphereGeometry,
+    Matrix4,
 } from 'three';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -64,27 +65,7 @@ function init() {
 	offsetParent.position.y = 32;
 	scene.add( offsetParent );
 
-    let maxVerts = 0;
-    let maxIndex = 0;
-
-
-    const cube = new Mesh( new SphereGeometry() );
-    // scene.add( cube );
-
     batchObject = new BatchedTileManager( renderer, MAX_TILES, 1800, 9000 );
-    // batchObject.addMesh( cube );
-
-
-    // setTimeout( () => {
-
-    //     const sphere = new Mesh( new BoxGeometry() );
-    //     batchObject.removeMesh( cube );
-    //     batchObject.addMesh( sphere );
-    //     console.log('REMOVE');
-        
-
-
-    // }, 1000 );
 
 	tiles = new TilesRenderer( 'https://raw.githubusercontent.com/NASA-AMMOS/3DTilesSampleData/master/msl-dingo-gap/0528_0260184_to_s64o256_colorize/0528_0260184_to_s64o256_colorize/0528_0260184_to_s64o256_colorize_tileset.json' );
     tiles.onLoadModel = scene => {
@@ -94,13 +75,6 @@ function init() {
         batchObject.addMesh( mesh );
 
 
-        // const { geometry } = mesh;
-        // const { map } = mesh.material;
-        // maxVerts = Math.max( geometry.attributes.position.count, maxVerts );
-        // maxIndex = Math.max( geometry.index.count, maxIndex );
-        // console.log( maxVerts, maxIndex );
-        // console.log( map.image.width )
-
     };
     tiles.onDisposeModel = scene => {
 
@@ -108,15 +82,17 @@ function init() {
         batchObject.removeMesh( mesh );
 
     };
-    // tiles.onTileVisibilityChange = ( scene, tile, value ) => {
+    tiles.onTileVisibilityChange = ( scene, tile, value ) => {
 
-    //     const [ mesh ] = scene.children;
-    //     batchObject.setVisible( mesh, value );
+        const [ mesh ] = scene.children;
+        batchObject.setVisible( mesh, value );
 
-    // };
+    };
+
+    tiles.group.visible = false;
 
     offsetParent.position.y = 0;
-	offsetParent.add( batchObject.mesh );
+	offsetParent.add( batchObject.mesh, tiles.group );
 
     
 	// We set camera for tileset
@@ -140,13 +116,13 @@ function init() {
 
         if ( v ) {
 
-            offsetParent.remove( tiles.group );
-            offsetParent.add( batchObject.mesh );
+            tiles.group.visible = false;
+            batchObject.mesh.visible = true;
 
         } else {
 
-            offsetParent.add( tiles.group );
-            offsetParent.remove( batchObject.mesh );
+            tiles.group.visible = true;
+            batchObject.mesh.visible = false;
 
         }
 
@@ -170,6 +146,7 @@ function onWindowResize() {
 
 function animate() {
     
+    tiles.group.updateMatrixWorld();
 	tiles.update();
 
     const start = window.performance.now();

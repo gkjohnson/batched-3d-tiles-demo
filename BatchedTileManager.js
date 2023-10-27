@@ -1,5 +1,5 @@
 import { BatchedMesh } from './BatchedMesh.js';
-import { BufferAttribute, MeshBasicMaterial, MeshNormalMaterial } from 'three';
+import { BufferAttribute, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial } from 'three';
 import { RenderTarget2DArray } from './RenderTarget2DArray.js';
 
 function addIdAttribute( g, id ) {
@@ -46,6 +46,12 @@ export class BatchedTileManager {
         const maxIndex = this._maxIndex;
         const maxVertex = this._maxVertex;
         const textureArray = this.textureArray;
+
+        if ( meshToId.has( mesh ) ) {
+
+            throw new Error();
+
+        }
 
         let batchId;
         if ( freeIds.length > 0 ) {
@@ -99,7 +105,6 @@ export class BatchedTileManager {
 
             const id = meshToId.get( mesh );
             batchedMesh.setVisibleAt( id, visible );
-            console.log( id, visible );
 
         }
 
