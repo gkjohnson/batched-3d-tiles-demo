@@ -422,7 +422,7 @@ class BatchedMesh extends Mesh {
 
 		// add the reserved range
 		reservedRanges.push( range );
-
+		
 		// push new geometry data range
 		vertexStarts.push( range.vertexStart );
 		vertexCounts.push( range.vertexCount );
@@ -442,6 +442,8 @@ class BatchedMesh extends Mesh {
 			idAttribute.setX( range.vertexStart + i, geometryId );
 
 		}
+		
+		idAttribute.needsUpdate = true;
 
 		// update the geometry
 		this.setGeometryAt( geometryId, geometry );
@@ -480,6 +482,7 @@ class BatchedMesh extends Mesh {
 
 		// copy attribute data over
 		const vertexStart = range.vertexStart;
+		const vertexCount = range.vertexCount;
 		for ( const attributeName in batchGeometry.attributes ) {
 
 			if ( attributeName === ID_ATTR_NAME ) {
@@ -495,11 +498,12 @@ class BatchedMesh extends Mesh {
 
 			// fill the rest in with zeroes
 			const itemSize = srcAttribute.itemSize;
-			for ( let i = srcAttribute.count, l = range.vertexCount; i < l; i ++ ) {
+			for ( let i = srcAttribute.count, l = vertexCount; i < l; i ++ ) {
 
+				const index = vertexStart + i;
 				for ( let c = 0; c < itemSize; c ++ ) {
 
-					dstIndex.setComponent( vertexStart + i, c, 0 );
+					dstAttribute.setComponent( index, c, 0 );
 
 				}
 
