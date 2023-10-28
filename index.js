@@ -173,7 +173,7 @@ function animate() {
 		`tiles displayed : ${ tiles.visibleTiles.size }\n` +
 		`draw calls      : ${ calls }\n` +
         `triangles       : ${ triangles.toLocaleString() }\n` +
-        `draw time       : ${ averageTime.toFixed( 2 ) }ms`;
+        `cpu render time : ${ averageTime.toFixed( 2 ) }ms`;
     window.info = renderer.info;
 
 }
