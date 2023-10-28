@@ -7,14 +7,7 @@ import {
 	AmbientLight,
 	WebGLRenderer,
 	PerspectiveCamera,
-	Box3,
-	Mesh,
-	MeshBasicMaterial,
 	Group,
-	Sphere,
-    BoxGeometry,
-    SphereGeometry,
-    Matrix4,
 } from 'three';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -29,6 +22,8 @@ let timeSamples = 0;
 const MAX_TILES = 800;
 const params = {
     useBatchedMesh: true,
+	errorTarget: 16,
+	minCacheSize: 600,
 };
 
 init();
@@ -132,6 +127,8 @@ function init() {
         timeSamples = 0;
 
     } );
+	gui.add( params, 'minCacheSize', 0, MAX_TILES, 1 );
+	gui.add( params, 'errorTarget' , 0, 20, 0.1 );
 	gui.open();
 
 }
@@ -149,6 +146,9 @@ function onWindowResize() {
 
 function animate() {
     
+	tiles.lruCache.minSize = params.minCacheSize;
+	tiles.errorTarget = params.errorTarget;
+
     tiles.group.updateMatrixWorld();
 	tiles.update();
 
@@ -162,11 +162,18 @@ function animate() {
 
     }
 
+	const totalLoaded =
+		tiles.lruCache.itemList.length -
+		tiles.parseQueue.items.length -
+		tiles.downloadQueue.items.length;
+
     const { calls, triangles } = renderer.info.render;
     infoEl.innerText =
-        `draw calls : ${ calls }\n` +
-        `triangles  : ${ triangles.toLocaleString() }\n` +
-        `draw time  : ${ averageTime.toFixed( 2 ) }ms`;
+		`tiles loaded    : ${ totalLoaded }\n` +
+		`tiles displayed : ${ tiles.visibleTiles.size }\n` +
+		`draw calls      : ${ calls }\n` +
+        `triangles       : ${ triangles.toLocaleString() }\n` +
+        `draw time       : ${ averageTime.toFixed( 2 ) }ms`;
     window.info = renderer.info;
 
 }

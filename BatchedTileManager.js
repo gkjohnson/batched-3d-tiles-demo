@@ -1,5 +1,5 @@
 import { BatchedMesh } from './BatchedMesh.js';
-import { BufferAttribute, MeshNormalMaterial, PerspectiveCamera } from 'three';
+import { BufferAttribute, DataTexture, MeshBasicMaterial, MeshNormalMaterial, PerspectiveCamera, RGBAFormat } from 'three';
 import { RenderTarget2DArray } from './RenderTarget2DArray.js';
 
 function addIdAttribute( g, id ) {
@@ -23,8 +23,54 @@ export class BatchedTileManager {
 
     constructor( renderer, maxGeometry, maxVertex, maxIndex ) {
 
-        this.mesh = new BatchedMesh( maxGeometry, maxGeometry * maxVertex, maxGeometry * maxIndex, new MeshNormalMaterial() );
-        this.textureArray = new RenderTarget2DArray( renderer, 256, 256, maxGeometry );
+        const tex = new RenderTarget2DArray( renderer, 256, 256, maxGeometry );
+        const mat = new MeshBasicMaterial();
+        mat.onBeforeCompile = function callback( parameters, renderer ) {
+
+            parameters.uniforms.texture_array = { value: tex.texture };
+
+            parameters.vertexShader = parameters.vertexShader
+                .replace(
+                    '#include <common>',
+                    `#include <common>
+                    attribute float texture_id;
+                    varying float texture_index;
+                    `,
+                )
+                .replace(
+                    '#include <uv_vertex>',
+                    `#include <uv_vertex>
+                    texture_index = texture_id;
+                    `,
+                );
+        
+            parameters.fragmentShader = parameters.fragmentShader
+                .replace(
+                    '#include <map_pars_fragment>',
+                    `
+                    #include <map_pars_fragment>
+
+                    precision highp sampler2DArray;
+                    uniform sampler2DArray texture_array;
+                    varying float texture_index;
+                    `,
+                )
+                .replace(
+                    '#include <map_fragment>',
+                    `
+                    #ifdef USE_MAP
+                        diffuseColor *= texture( texture_array, vec3( vMapUv, texture_index ) );
+                    #endif
+                    `
+                )
+        
+        };
+
+        mat.map = new DataTexture( new Uint8Array( [ 255, 0, 0, 255 ] ), 1, 1, RGBAFormat );
+        mat.map.needsUpdate = true;
+
+        this.mesh = new BatchedMesh( maxGeometry, maxGeometry * maxVertex, maxGeometry * maxIndex, mat );
+        this.textureArray = tex;
 
         this._maxVertex = maxVertex;
         this._maxIndex = maxIndex;
@@ -116,7 +162,7 @@ export class BatchedTileManager {
         idToMesh.set( batchId, mesh );
 
         textureArray.setTextureAt( batchId, mesh.material.map );
-        batchedMesh.setVisibleAt( batchId, true );
+        batchedMesh.setVisibleAt( batchId, false );
 
         this._uploadGeometry( batchId );
 
