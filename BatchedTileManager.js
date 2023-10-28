@@ -1,5 +1,5 @@
 import { BatchedMesh } from './BatchedMesh.js';
-import { BufferAttribute, MeshBasicMaterial, MeshNormalMaterial, MeshStandardMaterial } from 'three';
+import { BufferAttribute, MeshNormalMaterial, PerspectiveCamera } from 'three';
 import { RenderTarget2DArray } from './RenderTarget2DArray.js';
 
 function addIdAttribute( g, id ) {
@@ -18,6 +18,7 @@ function addIdAttribute( g, id ) {
 
 }
 
+const _camera = new PerspectiveCamera();
 export class BatchedTileManager {
 
     constructor( renderer, maxGeometry, maxVertex, maxIndex ) {
@@ -33,6 +34,46 @@ export class BatchedTileManager {
         this._meshToId = new Map();
         this._idToMesh = new Map();
         this._freeIds = [];
+
+        this._initialized = false;
+
+    }
+
+    _uploadGeometry( id ) {
+
+        const renderer = this._renderer;
+        const mesh = this.mesh;
+        const geometry = mesh.geometry;
+        const {
+            vertexStart,
+            vertexCount,
+            indexStart,
+            indexCount,
+        } = mesh._reservedRanges[ id ];
+
+        const index = geometry.index;
+        const attributes = geometry.attributes;
+        for ( const key in attributes ) {
+
+            const attr = attributes[ key ];
+            const itemSize = attr.itemSize;
+            attr.updateRange.offset = vertexStart * itemSize;
+            attr.updateRange.count = vertexCount * itemSize;
+            attr.needsUpdate = true;
+
+        }
+
+        index.updateRange.offset = indexStart;
+        index.updateRange.count = indexCount;
+        index.needsUpdate = true;
+
+        // Force an upload of the given range
+        const visible = mesh.visible;
+        mesh.visible = true;
+        mesh.geometry.setDrawRange( 0, 3 );
+        renderer.render( mesh, _camera );
+        mesh.geometry.setDrawRange( 0, Infinity );
+        mesh.visible = visible;
 
     }
 
@@ -52,6 +93,7 @@ export class BatchedTileManager {
             throw new Error();
 
         }
+
 
         let batchId;
         if ( freeIds.length > 0 ) {
@@ -75,7 +117,9 @@ export class BatchedTileManager {
 
         textureArray.setTextureAt( batchId, mesh.material.map );
         batchedMesh.setVisibleAt( batchId, true );
-        
+
+        this._uploadGeometry( batchId );
+
     }
 
     removeMesh( mesh ) {
@@ -91,7 +135,6 @@ export class BatchedTileManager {
             idToMesh.delete( id );
             freeIds.push( id );
             batchedMesh.setVisibleAt( id, false );
-
 
         }
 

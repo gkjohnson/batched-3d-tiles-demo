@@ -23,19 +23,18 @@ const batchingParsVertex = /* glsl */`
 #ifdef BATCHING
 	attribute float ${ ID_ATTR_NAME };
 	uniform highp sampler2D batchingTexture;
-	uniform int batchingTextureSize;
 	mat4 getBatchingMatrix( const in float i ) {
-		float j = i * 4.0;
-		float x = mod( j, float( batchingTextureSize ) );
-		float y = floor( j / float( batchingTextureSize ) );
-		float dx = 1.0 / float( batchingTextureSize );
-		float dy = 1.0 / float( batchingTextureSize );
-		y = dy * ( y + 0.5 );
-		vec4 v1 = texture2D( batchingTexture, vec2( dx * ( x + 0.5 ), y ) );
-		vec4 v2 = texture2D( batchingTexture, vec2( dx * ( x + 1.5 ), y ) );
-		vec4 v3 = texture2D( batchingTexture, vec2( dx * ( x + 2.5 ), y ) );
-		vec4 v4 = texture2D( batchingTexture, vec2( dx * ( x + 3.5 ), y ) );
+
+		int size = textureSize( batchingTexture, 0 ).x;
+		int j = int( i ) * 4;
+		int x = j % size;
+		int y = j / size;
+		vec4 v1 = texelFetch( batchingTexture, ivec2( x, y ), 0 );
+		vec4 v2 = texelFetch( batchingTexture, ivec2( x + 1, y ), 0 );
+		vec4 v3 = texelFetch( batchingTexture, ivec2( x + 2, y ), 0 );
+		vec4 v4 = texelFetch( batchingTexture, ivec2( x + 3, y ), 0 );
 		return mat4( v1, v2, v3, v4 );
+
 	}
 #endif
 `;
@@ -493,8 +492,7 @@ class BatchedMesh extends Mesh {
 
 			const srcAttribute = geometry.getAttribute( attributeName );
 			const dstAttribute = batchGeometry.getAttribute( attributeName );
-
-            dstAttribute.array.set( srcAttribute.array, vertexStart * dstAttribute.itemSize );
+			copyAttributeData( srcAttribute, dstAttribute, vertexStart );
 
 			// fill the rest in with zeroes
 			const itemSize = srcAttribute.itemSize;
@@ -520,12 +518,6 @@ class BatchedMesh extends Mesh {
 
 			// fill the rest in with zeroes
 			const indexStart = range.indexStart;
-            // console.log( vertexStart );
-			for ( let i = 0, l = range.indexCount; i < l; i ++ ) {
-
-				dstIndex.setX( indexStart + i, vertexStart );
-
-			}
 
 			// copy index data over
 			for ( let i = 0; i < srcIndex.count; i ++ ) {
@@ -535,11 +527,11 @@ class BatchedMesh extends Mesh {
 			}
 
 			// fill the rest in with zeroes
-			// for ( let i = srcIndex.count, l = range.indexCount; i < l; i ++ ) {
+			for ( let i = srcIndex.count, l = range.indexCount; i < l; i ++ ) {
 
-			// 	dstIndex.setX( indexStart + i, vertexStart );
+				dstIndex.setX( indexStart + i, vertexStart );
 
-			// }
+			}
 
 			dstIndex.needsUpdate = true;
 			this._indexCounts[ id ] = srcIndex.count;

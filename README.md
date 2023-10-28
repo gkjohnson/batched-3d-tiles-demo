@@ -2,9 +2,7 @@
 
 Demonstration of rendering 3d tiles using three.js BatchedMesh addon
 
-
 **TODO**
-- Add per-mesh upload
-- Make sure there's no overlap in ranges
+- Add .updateGeometry function
 - Use ints for the id buffer
-- Use texture fetch for matrices
+- Use texture ids for textures

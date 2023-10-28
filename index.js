@@ -74,7 +74,6 @@ function init() {
         mesh.updateMatrix();
         batchObject.addMesh( mesh );
 
-
     };
     tiles.onDisposeModel = scene => {
 
@@ -89,12 +88,16 @@ function init() {
 
     };
 
-    tiles.group.visible = false;
+    tiles.group.visible = ! params.useBatchedMesh;
+    batchObject.mesh.visible = params.useBatchedMesh;
 
     offsetParent.position.y = 0;
 	offsetParent.add( batchObject.mesh, tiles.group );
 
     
+    window.TILES = tiles;
+    window.BATCH = batchObject;
+
 	// We set camera for tileset
 	tiles.setCamera( camera );
 	tiles.setResolutionFromRenderer( camera, renderer );
