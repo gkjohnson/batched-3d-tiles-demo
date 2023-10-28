@@ -149,6 +149,7 @@ function animate() {
 	tiles.lruCache.minSize = params.minCacheSize;
 	tiles.errorTarget = params.errorTarget;
 
+	camera.updateMatrixWorld();
     tiles.group.updateMatrixWorld();
 	tiles.update();
 
