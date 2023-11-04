@@ -24,6 +24,7 @@ const params = {
     useBatchedMesh: true,
 	errorTarget: 16,
 	minCacheSize: 600,
+	coloredTiles: false,
 };
 
 init();
@@ -129,6 +130,23 @@ function init() {
     } );
 	gui.add( params, 'minCacheSize', 0, MAX_TILES, 1 );
 	gui.add( params, 'errorTarget' , 0, 20, 0.1 );
+	gui.add( params, 'coloredTiles' ).onChange( v => {
+
+		const material = batchObject.mesh.material;
+		if ( v ) {
+
+			material.defines.COLOR_ONLY = '';
+
+		} else {
+
+			delete material.defines.COLOR_ONLY;
+
+		}
+		
+		material.vertexColors = v;
+		material.needsUpdate = true;
+
+	} );
 	gui.open();
 
 }

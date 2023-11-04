@@ -1,5 +1,5 @@
 import { BatchedMesh } from './BatchedMesh.js';
-import { BufferAttribute, DataTexture, MeshBasicMaterial, MeshNormalMaterial, PerspectiveCamera, RGBAFormat } from 'three';
+import { BufferAttribute, Color, DataTexture, MeshBasicMaterial, MeshNormalMaterial, PerspectiveCamera, RGBAFormat } from 'three';
 import { RenderTarget2DArray } from './RenderTarget2DArray.js';
 
 function addIdAttribute( g, id ) {
@@ -17,6 +17,32 @@ function addIdAttribute( g, id ) {
     attr.array.fill( id );
 
 }
+
+const color = new Color();
+function addColorAttribute( g, id ) {
+
+    let attr = g.getAttribute( 'color' );
+    if ( ! attr ) {
+
+        const count = g.attributes.position.count;
+        const arr = new Uint8Array( count * 3 );
+        attr = new BufferAttribute( arr, 3, true );
+        g.setAttribute( 'color', attr );
+
+        color.setHSL( Math.random(), 0.5 + Math.random() * 0.3, 0.4 + Math.random() * 0.2 );
+
+        for ( let i = 0; i < count * 3; i += 3 ) {
+
+            arr[ i + 0 ] = color.r * 255;
+            arr[ i + 1 ] = color.g * 255;
+            arr[ i + 2 ] = color.b * 255;
+
+        }
+
+    }
+
+}
+
 
 const _camera = new PerspectiveCamera();
 export class BatchedTileManager {
@@ -58,7 +84,7 @@ export class BatchedTileManager {
                 .replace(
                     '#include <map_fragment>',
                     `
-                    #ifdef USE_MAP
+                    #if defined( USE_MAP ) && ! defined( COLOR_ONLY )
                         diffuseColor *= texture( texture_array, vec3( vMapUv, texture_index ) );
                     #endif
                     `
@@ -146,6 +172,7 @@ export class BatchedTileManager {
 
             const id = freeIds.pop();
             addIdAttribute( geometry, id );
+            addColorAttribute( geometry );
             batchedMesh.setGeometryAt( id, geometry );
             batchId = id;
 
@@ -153,6 +180,7 @@ export class BatchedTileManager {
 
             const id = this._nextId ++;
             addIdAttribute( geometry, id );
+            addColorAttribute( geometry );
             batchId = batchedMesh.addGeometry( geometry, maxVertex, maxIndex );
 
         }
