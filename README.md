@@ -1,6 +1,6 @@
 # batched-3d-tiles-demo
 
-Demonstration of rendering 3d tiles using three.js BatchedMesh addon: [demo page](https://gkjohnson.github.io/batched-3d-tiles-demo/)
+Demonstration of rendering 3d tiles with [3D Tiles Renderer](https://github.com/NASA-AMMOS/3DTilesRendererJS) using three.js BatchedMesh addon: [demo page](https://gkjohnson.github.io/batched-3d-tiles-demo/)
 
 The demo shows a use cased for three.js' BatchedMesh and `WEBGL_multidraw_arrays` extension that enables the drawing of a full 3D Tiles tileset in a single draw call by:
 
