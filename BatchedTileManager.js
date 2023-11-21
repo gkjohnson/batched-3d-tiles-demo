@@ -47,14 +47,13 @@ function addColorAttribute( g, id ) {
 const _camera = new PerspectiveCamera();
 export class BatchedTileManager {
 
-    constructor( renderer, maxGeometry, maxVertex, maxIndex ) {
+    constructor( renderer, maxGeometry, maxVertex, maxIndex, BatchedMeshClass = BatchedMesh ) {
 
         const tex = new RenderTarget2DArray( renderer, 256, 256, maxGeometry );
         const mat = new MeshBasicMaterial();
         mat.onBeforeCompile = function callback( parameters, renderer ) {
 
             parameters.uniforms.texture_array = { value: tex.texture };
-
             parameters.vertexShader = parameters.vertexShader
                 .replace(
                     '#include <common>',
@@ -66,6 +65,11 @@ export class BatchedTileManager {
                 .replace(
                     '#include <uv_vertex>',
                     `#include <uv_vertex>
+                    ${
+                        BatchedMeshClass === BatchedMesh ?
+                        '' :
+                        'mat4 batchingMatrix = getBatchingMatrix( batchId );'
+                    }
                     texture_index = texture_id;
                     `,
                 );
@@ -93,9 +97,12 @@ export class BatchedTileManager {
         };
 
         mat.map = new DataTexture( new Uint8Array( [ 255, 0, 0, 255 ] ), 1, 1, RGBAFormat );
+        mat.defines = {};
         mat.map.needsUpdate = true;
 
-        this.mesh = new BatchedMesh( maxGeometry, maxGeometry * maxVertex, maxGeometry * maxIndex, mat );
+        this.mesh = new BatchedMeshClass( maxGeometry, maxGeometry * maxVertex, maxGeometry * maxIndex, mat );
+        this.mesh.frustumCulled = false;
+        this.mesh.perObjectFrustumCulled = false;
         this.textureArray = tex;
 
         this._maxVertex = maxVertex;
@@ -129,14 +136,30 @@ export class BatchedTileManager {
 
             const attr = attributes[ key ];
             const itemSize = attr.itemSize;
-            attr.updateRange.offset = vertexStart * itemSize;
-            attr.updateRange.count = vertexCount * itemSize;
+            if ( attr.addUpdateRange ) {
+
+                attr.addUpdateRange( vertexStart * itemSize, vertexCount * itemSize );
+
+            } else {
+            
+                attr.updateRange.offset = vertexStart * itemSize;
+                attr.updateRange.count = vertexCount * itemSize;
+
+            }
             attr.needsUpdate = true;
 
         }
 
-        index.updateRange.offset = indexStart;
-        index.updateRange.count = indexCount;
+        if ( index.addUpdateRange ) {
+
+            index.addUpdateRange( indexStart, indexCount );
+
+        } else {
+
+            index.updateRange.offset = indexStart;
+            index.updateRange.count = indexCount;
+
+        }
         index.needsUpdate = true;
 
         // Force an upload of the given range

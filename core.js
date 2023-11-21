@@ -8,15 +8,18 @@ import {
 	WebGLRenderer,
 	PerspectiveCamera,
 	Group,
+	BatchedMesh,
 } from 'three';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { BatchedTileManager } from './BatchedTileManager.js';
+import { radixSort } from './SortUtils.js';
 
 let camera, scene, renderer, tiles, controls, batchObject;
 let offsetParent;
 let infoEl;
 let averageTime = 0;
+let averageUpdateTime = 0;
 let timeSamples = 0;
 
 const MAX_TILES = 800;
@@ -61,7 +64,32 @@ function init() {
 	offsetParent.position.y = 32;
 	scene.add( offsetParent );
 
-    batchObject = new BatchedTileManager( renderer, MAX_TILES, 1800, 9000 );
+    batchObject = new BatchedTileManager( renderer, MAX_TILES, 1800, 9000, BatchedMesh );
+	batchObject.mesh.sortObjects = false;
+	batchObject.mesh.setCustomSort( function ( list, camera ) {
+
+		// initialize options
+		this._options = this._options || {
+			get: el => el.z,
+			aux: new Array( list.length ),
+		};
+
+		const options = this._options;
+		options.reversed = this.material.transparent;
+
+		// convert depth to unsigned 32 bit range
+		const den = camera.far;
+		for ( let i = 0, l = list.length; i < l; i ++ ) {
+
+			const el = list[ i ];
+			el.z = ( 1 << 30 ) * ( el.z / den );
+
+		}
+
+		// perform a fast-sort using the hybrid radix sort function
+		radixSort( list, options );
+
+	} );
 
 	tiles = new TilesRenderer( 'https://raw.githubusercontent.com/NASA-AMMOS/3DTilesSampleData/master/msl-dingo-gap/0528_0260184_to_s64o256_colorize/0528_0260184_to_s64o256_colorize/0528_0260184_to_s64o256_colorize_tileset.json' );
     tiles.onLoadModel = scene => {
@@ -167,13 +195,17 @@ function animate() {
 	tiles.lruCache.minSize = params.minCacheSize;
 	tiles.errorTarget = params.errorTarget;
 
+	let start, delta;
+    start = window.performance.now();
 	camera.updateMatrixWorld();
     tiles.group.updateMatrixWorld();
 	tiles.update();
+    delta = window.performance.now() - start;
+    averageUpdateTime += ( delta - averageUpdateTime ) / ( timeSamples + 1 );
 
-    const start = window.performance.now();
+    start = window.performance.now();
 	renderer.render( scene, camera );
-    const delta = window.performance.now() - start;
+    delta = window.performance.now() - start;
     averageTime += ( delta - averageTime ) / ( timeSamples + 1 );
     if ( timeSamples < 60 ) {
         
@@ -188,11 +220,14 @@ function animate() {
 
     const { calls, triangles } = renderer.info.render;
     infoEl.innerText =
-		`tiles loaded    : ${ totalLoaded }\n` +
-		`tiles displayed : ${ tiles.visibleTiles.size }\n` +
-		`draw calls      : ${ calls }\n` +
-        `triangles       : ${ triangles.toLocaleString() }\n` +
-        `cpu render time : ${ averageTime.toFixed( 2 ) }ms`;
+		`tiles downloading : ${ tiles.downloadQueue.items.length }\n` +
+		`tiles parsing     : ${ tiles.parseQueue.items.length }\n` +
+		`tiles loaded      : ${ totalLoaded }\n` +
+		`tiles displayed   : ${ tiles.visibleTiles.size }\n` +
+		`draw calls        : ${ calls }\n` +
+        `triangles         : ${ triangles.toLocaleString() }\n` +
+        `tiles update time : ${ averageUpdateTime.toFixed( 2 ) }ms\n` +
+        `cpu render time   : ${ averageTime.toFixed( 2 ) }ms`;
     window.info = renderer.info;
 
 }
