@@ -28,6 +28,7 @@ const params = {
 	errorTarget: 5,
 	minCacheSize: 600,
 	coloredTiles: false,
+	sortObjects: false,
 };
 
 init();
@@ -65,7 +66,6 @@ function init() {
 	scene.add( offsetParent );
 
     batchObject = new BatchedTileManager( renderer, MAX_TILES, 1800, 9000, BatchedMesh );
-	batchObject.mesh.sortObjects = false;
 	batchObject.mesh.setCustomSort( function ( list, camera ) {
 
 		// initialize options
@@ -175,6 +175,11 @@ function init() {
 		material.needsUpdate = true;
 
 	} );
+	gui.add( params, 'sortObjects' ).onChange( () => {
+
+        timeSamples = 0;
+
+	} );
 	gui.open();
 
 }
@@ -192,6 +197,8 @@ function onWindowResize() {
 
 function animate() {
     
+	batchObject.mesh.sortObjects = params.sortObjects;
+
 	tiles.lruCache.minSize = params.minCacheSize;
 	tiles.errorTarget = params.errorTarget;
 
